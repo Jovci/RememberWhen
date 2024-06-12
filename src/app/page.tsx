@@ -32,7 +32,7 @@ export default function Home() {
           <iframe 
             width='100%' 
             height='100%' 
-            src="https://api.mapbox.com/styles/v1/jovci/clxbm0ukj024301pohxdx4u98.html?title=false&access_token=pk.eyJ1Ijoiam92Y2kiLCJhIjoiY2x2dWVzNzU2MWphdDJ3bzZ0NDh6dmR5ZiJ9.T8BAscTbUkJhCBTnq1_iSQ&zoomwheel=true#2/37.0902/-95.7129" 
+            src="https://api.mapbox.com/styles/v1/jovci/clxbm0ukj024301pohxdx4u98.html?title=false&access_token=pk.eyJ1Ijoiam92Y2kiLCJhIjoiY2x2dWVzNzU2MWphdDJ3bzZ0NDh6dmR5ZiJ9.T8BAscTbUkJhCBTnq1_iSQ&zoomwheel=true#0/37.0902/-95.7129" 
             title="Untitled" 
             style={{ border: 'none' }}
           ></iframe>
