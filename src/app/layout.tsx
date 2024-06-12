@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title:
     'RememberWhen - For the times you say Remember When?',
   description:
-    'Quickly link new on-call tickets to similar past incidents and their solutions. All directly in Slack the moment an incident happens.',
+    'RememberWhen: A Virtual Memory Book designed to bring family and friends together.',
   openGraph: {
     images: '/opengraph-image.png'
   },
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     title:
       'RememberWhen - For the times you say Remember When?',
     description:
-      'Quickly link new on-call tickets to similar past incidents and their solutions. All directly in Slack the moment an incident happens.',
+      'RememberWhen: A Virtual Memory Book designed to bring family and friends together.',
     images: ['src\app\opengraph-image.png']
   }
 }
