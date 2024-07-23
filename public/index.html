@@ -8,8 +8,71 @@
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <style>
-body { margin: 0; padding: 0; }
-#map { position: absolute; top: 0; bottom: 0; width: 100%; }
+body { margin: 0; padding: 0; display: flex; }
+#map { position: absolute; top: 0; bottom: 0; left: 250px; right: 0; }
+#sidebar {
+    width: 250px;
+    height: 100vh;
+    background: #0a0a0a; /* Color extracted from the image */
+    padding: 15px;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 1;
+    color: white; /* Set text color to white */
+}
+#sidebar h2, #sidebar label, #sidebar button {
+    color: white; /* Ensure all text elements are white */
+    font-weight: 600; /* font-semibold */
+    margin-top: 16px; /* mt-4 */
+    margin-bottom: 8px; /* mb-2 */
+}
+#sidebar input, #sidebar select {
+    width: 100%;
+    margin-bottom: 10px;
+}
+#sidebar button {
+    background-color: #333; /* Darker background for the button */
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    color: white;
+    margin-top: 16px; /* mt-4 for button */
+    margin-bottom: 8px; /* mb-2 for button */
+}
+#sidebar button:hover {
+    background-color: #444; /* Slightly lighter on hover */
+}
+#imageModal {
+    display: none; /* Hidden by default */
+    position: fixed;
+    z-index: 999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.9); /* Black background with opacity */
+    justify-content: center;
+    align-items: center;
+}
+#imageModal img, #imageModal video {
+    margin: auto;
+    display: block;
+    max-width: 90%;
+    max-height: 90%;
+}
+#imageModal .close {
+    position: absolute;
+    top: 20px;
+    right: 35px;
+    color: white;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+}
 </style>
 </head>
 <body>
@@ -17,7 +80,43 @@ body { margin: 0; padding: 0; }
 <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
 <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" type="text/css">
 
+<div id="sidebar">
+    <h2>Place a Marker</h2>
+    <label for="icon">Icon:</label>
+    <select id="icon">
+        <option value="fa-solid fa-robot">Robot</option>
+        <option value="fa-solid fa-graduation-cap">Graduation Cap</option>
+        <option value="fa-solid fa-heart">Heart</option>
+        <option value="fa-solid fa-users">Group</option>
+        <option value="fa-solid fa-bowl-food">Food</option>
+        <!-- Add more options as needed -->
+    </select>
+    <br>
+    <label for="iconColor">Icon Color:</label>
+    <input type="color" id="iconColor" value="#000000">
+    <br>
+    <label for="outerColor">Outer Color:</label>
+    <input type="color" id="outerColor" value="#ffffff">
+    <br>
+    <label for="description">Description:</label>
+    <input type="text" id="description">
+    <br>
+    <label for="media">Upload Images/Videos:</label>
+    <input type="file" id="media" multiple accept="image/*,video/*">
+    <br>
+    <button id="placeMarker">Place Marker</button>
+    <button id="deleteMarker">Delete Marker</button>
+    <button id="addMediaToMarker">Add Media to Marker</button>
+</div>
+
 <div id="map"></div>
+
+<!-- Modal to display full-size images and videos -->
+<div id="imageModal" class="modal">
+    <span class="close">&times;</span>
+    <img class="modal-content" id="modalImage">
+    <video class="modal-content" id="modalVideo" controls></video>
+</div>
 
 <script>
 	mapboxgl.accessToken = 'pk.eyJ1Ijoiam92Y2kiLCJhIjoiY2x2dWVzNzU2MWphdDJ3bzZ0NDh6dmR5ZiJ9.T8BAscTbUkJhCBTnq1_iSQ';
@@ -79,8 +178,11 @@ body { margin: 0; padding: 0; }
     spinGlobe();
 </script>
 <script>
+    let selectedMarker = null;
+    let markersArray = JSON.parse(localStorage.getItem('markers')) || [];
+
     class FontawesomeMarker extends mapboxgl.Marker {
-        constructor({ icon, color, iconColor }) {
+        constructor({ icon, color, iconColor, coordinates, description, media }) {
             const el = document.createElement('div');
             el.className = 'marker';
             el.style.backgroundColor = color;
@@ -91,7 +193,265 @@ body { margin: 0; padding: 0; }
             el.style.justifyContent = 'center';
             el.style.alignItems = 'center';
             el.innerHTML = `<i class="${icon}" style="color: ${iconColor};"></i>`;
-            super(el);
+            super(el)
+                .setLngLat(coordinates)
+                .setPopup(this.createPopup(description, media))
+                .addTo(map);
+
+            el.addEventListener('click', () => {
+                if (selectedMarker) {
+                    selectedMarker.getElement().style.border = 'none';
+                }
+                selectedMarker = this;
+                el.style.border = '2px solid red';
+            });
+        }
+
+        createPopup(description, media) {
+            const popupContent = document.createElement('div');
+            popupContent.style.maxWidth = '200px';
+
+            const descElem = document.createElement('p');
+            descElem.innerText = description;
+            popupContent.appendChild(descElem);
+
+            if (media && media.length > 0) {
+                const grid = document.createElement('div');
+                grid.style.display = 'grid';
+                grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(50px, 1fr))';
+                grid.style.gap = '5px';
+                media.forEach((item, index) => {
+                    const mediaContainer = document.createElement('div');
+                    mediaContainer.style.position = 'relative';
+
+                    let mediaElem;
+                    if (item.type.startsWith('image/')) {
+                        mediaElem = document.createElement('img');
+                        mediaElem.src = item.src;
+                    } else if (item.type.startsWith('video/')) {
+                        mediaElem = document.createElement('video');
+                        mediaElem.src = item.src;
+                        mediaElem.controls = true;
+                    }
+
+                    mediaElem.style.width = '100%';
+                    mediaElem.style.height = 'auto';
+                    mediaElem.style.borderRadius = '5px';
+                    mediaElem.style.cursor = 'pointer';
+                    mediaElem.addEventListener('click', () => {
+                        showModal(item);
+                    });
+
+                    const removeBtn = document.createElement('span');
+                    removeBtn.innerHTML = '&times;';
+                    removeBtn.style.position = 'absolute';
+                    removeBtn.style.top = '5px';
+                    removeBtn.style.right = '5px';
+                    removeBtn.style.backgroundColor = 'rgba(0,0,0,0.7)';
+                    removeBtn.style.color = 'white';
+                    removeBtn.style.borderRadius = '50%';
+                    removeBtn.style.padding = '2px 5px';
+                    removeBtn.style.cursor = 'pointer';
+                    removeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.removeMedia(index);
+                    });
+
+                    mediaContainer.appendChild(mediaElem);
+                    mediaContainer.appendChild(removeBtn);
+                    grid.appendChild(mediaContainer);
+                });
+                popupContent.appendChild(grid);
+            }
+
+            return new mapboxgl.Popup({ offset: 25 }).setDOMContent(popupContent);
+        }
+
+        updatePopup(media) {
+            const popupContent = this.getPopup().getElement().querySelector('.mapboxgl-popup-content > div');
+            const grid = popupContent.querySelector('div');
+
+            media.forEach((item, index) => {
+                const mediaContainer = document.createElement('div');
+                mediaContainer.style.position = 'relative';
+
+                let mediaElem;
+                if (item.type.startsWith('image/')) {
+                    mediaElem = document.createElement('img');
+                    mediaElem.src = item.src;
+                } else if (item.type.startsWith('video/')) {
+                    mediaElem = document.createElement('video');
+                    mediaElem.src = item.src;
+                    mediaElem.controls = true;
+                }
+
+                mediaElem.style.width = '100%';
+                mediaElem.style.height = 'auto';
+                mediaElem.style.borderRadius = '5px';
+                mediaElem.style.cursor = 'pointer';
+                mediaElem.addEventListener('click', () => {
+                    showModal(item);
+                });
+
+                const removeBtn = document.createElement('span');
+                removeBtn.innerHTML = '&times;';
+                removeBtn.style.position = 'absolute';
+                removeBtn.style.top = '5px';
+                removeBtn.style.right = '5px';
+                removeBtn.style.backgroundColor = 'rgba(0,0,0,0.7)';
+                removeBtn.style.color = 'white';
+                removeBtn.style.borderRadius = '50%';
+                removeBtn.style.padding = '2px 5px';
+                removeBtn.style.cursor = 'pointer';
+                removeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.removeMedia(index);
+                });
+
+                mediaContainer.appendChild(mediaElem);
+                mediaContainer.appendChild(removeBtn);
+                grid.appendChild(mediaContainer);
+            });
+        }
+
+        removeMedia(index) {
+            const markerIndex = markersArray.findIndex(markerData => {
+                const markerLngLat = this.getLngLat();
+                return markerData.coordinates[0] === markerLngLat.lng && markerData.coordinates[1] === markerLngLat.lat;
+            });
+            if (markerIndex !== -1) {
+                markersArray[markerIndex].media.splice(index, 1);
+                localStorage.setItem('markers', JSON.stringify(markersArray));
+                this.getPopup().remove();
+                this.setPopup(this.createPopup(markersArray[markerIndex].description, markersArray[markerIndex].media)).togglePopup();
+            }
+        }
+    }
+
+    // Load saved markers from local storage
+    markersArray.forEach(markerData => {
+        new FontawesomeMarker(markerData);
+    });
+
+    document.getElementById('placeMarker').addEventListener('click', () => {
+        const icon = document.getElementById('icon').value;
+        const iconColor = document.getElementById('iconColor').value;
+        const outerColor = document.getElementById('outerColor').value;
+        const description = document.getElementById('description').value;
+        const mediaInput = document.getElementById('media');
+        const media = [];
+
+        if (mediaInput.files) {
+            Array.from(mediaInput.files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    media.push({ src: e.target.result, type: file.type });
+
+                    // When all media are loaded, save the marker
+                    if (media.length === mediaInput.files.length) {
+                        map.once('click', (e) => {
+                            const coordinates = [e.lngLat.lng, e.lngLat.lat];
+                            const markerData = {
+                                icon: icon,
+                                color: outerColor,
+                                iconColor: iconColor,
+                                coordinates: coordinates,
+                                description: description,
+                                media: media
+                            };
+
+                            new FontawesomeMarker(markerData);
+                            markersArray.push(markerData);
+                            localStorage.setItem('markers', JSON.stringify(markersArray));
+
+                            // Clear the media upload input
+                            mediaInput.value = '';
+                        });
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+    });
+
+    document.getElementById('deleteMarker').addEventListener('click', () => {
+        if (selectedMarker) {
+            const markerElement = selectedMarker.getElement();
+            const markerIndex = markersArray.findIndex(markerData => {
+                const markerLngLat = selectedMarker.getLngLat();
+                return markerData.coordinates[0] === markerLngLat.lng && markerData.coordinates[1] === markerLngLat.lat;
+            });
+            if (markerIndex !== -1) {
+                markersArray.splice(markerIndex, 1);
+                localStorage.setItem('markers', JSON.stringify(markersArray));
+            }
+            selectedMarker.remove();
+            selectedMarker = null;
+        }
+    });
+
+    document.getElementById('addMediaToMarker').addEventListener('click', () => {
+        if (selectedMarker) {
+            const mediaInput = document.getElementById('media');
+            const newMedia = [];
+            if (mediaInput.files) {
+                Array.from(mediaInput.files).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        newMedia.push({ src: e.target.result, type: file.type });
+
+                        // When all media are loaded, update the marker
+                        if (newMedia.length === mediaInput.files.length) {
+                            const markerIndex = markersArray.findIndex(markerData => {
+                                const markerLngLat = selectedMarker.getLngLat();
+                                return markerData.coordinates[0] === markerLngLat.lng && markerData.coordinates[1] === markerLngLat.lat;
+                            });
+                            if (markerIndex !== -1) {
+                                markersArray[markerIndex].media = markersArray[markerIndex].media.concat(newMedia);
+                                localStorage.setItem('markers', JSON.stringify(markersArray));
+                                selectedMarker.updatePopup(newMedia);
+                                
+                                // Clear the media upload input
+                                mediaInput.value = '';
+                            }
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+        }
+    });
+
+    // Modal functionality
+    const modal = document.getElementById('imageModal');
+    const modalImage = document.getElementById('modalImage');
+    const modalVideo = document.getElementById('modalVideo');
+    const closeModal = document.getElementsByClassName('close')[0];
+
+    function showModal(media) {
+        if (media.type.startsWith('image/')) {
+            modalImage.src = media.src;
+            modalImage.style.display = 'block';
+            modalVideo.style.display = 'none';
+        } else if (media.type.startsWith('video/')) {
+            modalVideo.src = media.src;
+            modalVideo.style.display = 'block';
+            modalImage.style.display = 'none';
+        }
+        modal.style.display = 'flex';
+    }
+
+    closeModal.onclick = function() {
+        modal.style.display = 'none';
+        modalImage.src = '';
+        modalVideo.src = '';
+    }
+
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = 'none';
+            modalImage.src = '';
+            modalVideo.src = '';
         }
     }
 </script>

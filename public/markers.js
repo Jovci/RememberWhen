@@ -4,14 +4,14 @@ document.addEventListener('DOMContentLoaded', (event) => {
             coordinates: [-117.8443, 33.6405], // UCI coordinates
             icon: 'fa-solid fa-robot', // Example icon from the provided array
             iconColor: 'blue',
-            color: 'gold', // White background to contrast with the icon color
+            color: '#FFD700', // White background to contrast with the icon color
             description: "University of California, Irvine (UCI)"
         },
         {
             coordinates: [-117.8850, 33.8831], // CSUF coordinates
             icon: 'fa-solid fa-graduation-cap', // Example icon from the provided array
             iconColor: 'orange',
-            color: 'blue', // White background to contrast with the icon color
+            color: '#0000FF', // White background to contrast with the icon color
             description: "California State University, Fullerton (CSUF)"
         }
     ];
@@ -22,10 +22,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
         new FontawesomeMarker({
             icon: marker.icon,
             color: marker.color,
-            iconColor: marker.iconColor
-        })
-            .setLngLat(marker.coordinates)
-            .setPopup(popup)
-            .addTo(map);
+            iconColor: marker.iconColor,
+            coordinates: marker.coordinates,
+            description: marker.description
+        });
     });
 });
