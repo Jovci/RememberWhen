@@ -7,6 +7,7 @@
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <style>
 body { margin: 0; padding: 0; display: flex; }
 #map { position: absolute; top: 0; bottom: 0; left: 250px; right: 0; }
@@ -119,7 +120,9 @@ body { margin: 0; padding: 0; display: flex; }
 </div>
 
 <script>
-	mapboxgl.accessToken = 'pk.eyJ1Ijoiam92Y2kiLCJhIjoiY2x2dWVzNzU2MWphdDJ3bzZ0NDh6dmR5ZiJ9.T8BAscTbUkJhCBTnq1_iSQ';
+    const API_URL = 'https://rememberwhen-backend-1841345435fe.herokuapp.com/';
+
+    mapboxgl.accessToken = 'pk.eyJ1Ijoiam92Y2kiLCJhIjoiY2x2dWVzNzU2MWphdDJ3bzZ0NDh6dmR5ZiJ9.T8BAscTbUkJhCBTnq1_iSQ';
     const map = new mapboxgl.Map({
         container: 'map',
         style: 'mapbox://styles/jovci/clxbm0ukj024301pohxdx4u98',
@@ -176,13 +179,12 @@ body { margin: 0; padding: 0; display: flex; }
     });
 
     spinGlobe();
-</script>
-<script>
+
     let selectedMarker = null;
-    let markersArray = JSON.parse(localStorage.getItem('markers')) || [];
+    let markersArray = [];
 
     class FontawesomeMarker extends mapboxgl.Marker {
-        constructor({ icon, color, iconColor, coordinates, description, media }) {
+        constructor({ icon, color, iconColor, coordinates, description, media, id }) {
             const el = document.createElement('div');
             el.className = 'marker';
             el.style.backgroundColor = color;
@@ -205,6 +207,8 @@ body { margin: 0; padding: 0; display: flex; }
                 selectedMarker = this;
                 el.style.border = '2px solid red';
             });
+
+            this.id = id;
         }
 
         createPopup(description, media) {
@@ -315,23 +319,27 @@ body { margin: 0; padding: 0; display: flex; }
         }
 
         removeMedia(index) {
-            const markerIndex = markersArray.findIndex(markerData => {
-                const markerLngLat = this.getLngLat();
-                return markerData.coordinates[0] === markerLngLat.lng && markerData.coordinates[1] === markerLngLat.lat;
-            });
-            if (markerIndex !== -1) {
-                markersArray[markerIndex].media.splice(index, 1);
-                localStorage.setItem('markers', JSON.stringify(markersArray));
-                this.getPopup().remove();
-                this.setPopup(this.createPopup(markersArray[markerIndex].description, markersArray[markerIndex].media)).togglePopup();
-            }
+            axios.delete(`${API_URL}/markers/${this.id}/media/${index}`)
+                .then(() => {
+                    this.getPopup().remove();
+                    const markerIndex = markersArray.findIndex(markerData => markerData.id === this.id);
+                    markersArray[markerIndex].media.splice(index, 1);
+                    this.setPopup(this.createPopup(markersArray[markerIndex].description, markersArray[markerIndex].media)).togglePopup();
+                })
+                .catch(err => console.error(err));
         }
     }
 
-    // Load saved markers from local storage
-    markersArray.forEach(markerData => {
-        new FontawesomeMarker(markerData);
-    });
+    function loadMarkers() {
+        axios.get(`${API_URL}/markers`)
+            .then(response => {
+                markersArray = response.data;
+                markersArray.forEach(markerData => {
+                    new FontawesomeMarker(markerData);
+                });
+            })
+            .catch(err => console.error(err));
+    }
 
     document.getElementById('placeMarker').addEventListener('click', () => {
         const icon = document.getElementById('icon').value;
@@ -360,12 +368,15 @@ body { margin: 0; padding: 0; display: flex; }
                                 media: media
                             };
 
-                            new FontawesomeMarker(markerData);
-                            markersArray.push(markerData);
-                            localStorage.setItem('markers', JSON.stringify(markersArray));
-
-                            // Clear the media upload input
-                            mediaInput.value = '';
+                            axios.post(`${API_URL}/markers`, markerData)
+                                .then(response => {
+                                    markerData.id = response.data._id;
+                                    new FontawesomeMarker(markerData);
+                                    markersArray.push(markerData);
+                                    // Clear the media upload input
+                                    mediaInput.value = '';
+                                })
+                                .catch(err => console.error(err));
                         });
                     }
                 };
@@ -376,17 +387,17 @@ body { margin: 0; padding: 0; display: flex; }
 
     document.getElementById('deleteMarker').addEventListener('click', () => {
         if (selectedMarker) {
-            const markerElement = selectedMarker.getElement();
-            const markerIndex = markersArray.findIndex(markerData => {
-                const markerLngLat = selectedMarker.getLngLat();
-                return markerData.coordinates[0] === markerLngLat.lng && markerData.coordinates[1] === markerLngLat.lat;
-            });
-            if (markerIndex !== -1) {
-                markersArray.splice(markerIndex, 1);
-                localStorage.setItem('markers', JSON.stringify(markersArray));
-            }
-            selectedMarker.remove();
-            selectedMarker = null;
+            const markerId = selectedMarker.id;
+            axios.delete(`${API_URL}/markers/${markerId}`)
+                .then(() => {
+                    const markerIndex = markersArray.findIndex(markerData => markerData.id === markerId);
+                    if (markerIndex !== -1) {
+                        markersArray.splice(markerIndex, 1);
+                    }
+                    selectedMarker.remove();
+                    selectedMarker = null;
+                })
+                .catch(err => console.error(err));
         }
     });
 
@@ -402,17 +413,16 @@ body { margin: 0; padding: 0; display: flex; }
 
                         // When all media are loaded, update the marker
                         if (newMedia.length === mediaInput.files.length) {
-                            const markerIndex = markersArray.findIndex(markerData => {
-                                const markerLngLat = selectedMarker.getLngLat();
-                                return markerData.coordinates[0] === markerLngLat.lng && markerData.coordinates[1] === markerLngLat.lat;
-                            });
+                            const markerIndex = markersArray.findIndex(markerData => markerData.id === selectedMarker.id);
                             if (markerIndex !== -1) {
                                 markersArray[markerIndex].media = markersArray[markerIndex].media.concat(newMedia);
-                                localStorage.setItem('markers', JSON.stringify(markersArray));
-                                selectedMarker.updatePopup(newMedia);
-                                
-                                // Clear the media upload input
-                                mediaInput.value = '';
+                                axios.put(`${API_URL}/markers/${selectedMarker.id}`, markersArray[markerIndex])
+                                    .then(() => {
+                                        selectedMarker.updatePopup(newMedia);
+                                        // Clear the media upload input
+                                        mediaInput.value = '';
+                                    })
+                                    .catch(err => console.error(err));
                             }
                         }
                     };
@@ -454,7 +464,11 @@ body { margin: 0; padding: 0; display: flex; }
             modalVideo.src = '';
         }
     }
+
+    // Load markers from the backend when the page loads
+    window.onload = loadMarkers;
 </script>
-<script src="markers.js"></script>
+</body>
+</html></script>
 </body>
 </html>
