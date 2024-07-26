@@ -1,5 +1,5 @@
 class FontawesomeMarker extends mapboxgl.Marker {
-    constructor({ icon, color, iconColor, coordinates, description, media }) {
+    constructor({ icon, color, iconColor, coordinates, description, media, _id }) {
         const el = document.createElement('div');
         el.className = 'marker';
         el.style.backgroundColor = color;
@@ -12,8 +12,10 @@ class FontawesomeMarker extends mapboxgl.Marker {
         el.innerHTML = `<i class="${icon}" style="color: ${iconColor};"></i>`;
         super(el)
             .setLngLat(coordinates)
-            .setPopup(this.createPopup(description, media))
+            .setPopup(this.createPopup(description, media, _id))
             .addTo(map);
+
+        this._id = _id;  // Store the marker ID
 
         el.addEventListener('click', () => {
             if (selectedMarker) {
@@ -24,7 +26,7 @@ class FontawesomeMarker extends mapboxgl.Marker {
         });
     }
 
-    createPopup(description, media) {
+    createPopup(description, media, markerId) {
         const popupContent = document.createElement('div');
         popupContent.style.maxWidth = '200px';
 
@@ -69,9 +71,16 @@ class FontawesomeMarker extends mapboxgl.Marker {
                 removeBtn.style.borderRadius = '50%';
                 removeBtn.style.padding = '2px 5px';
                 removeBtn.style.cursor = 'pointer';
-                removeBtn.addEventListener('click', (e) => {
+                removeBtn.addEventListener('click', async (e) => {
                     e.stopPropagation();
-                    this.removeMedia(index);
+                    try {
+                        await fetch(`https://rememberwhen-backend-43d3134117c9.herokuapp.com/markers/${markerId}/media/${index}`, {
+                            method: 'PATCH'
+                        });
+                        this.removeMedia(index);
+                    } catch (error) {
+                        console.error('Error deleting media from server:', error);
+                    }
                 });
 
                 mediaContainer.appendChild(mediaElem);
@@ -87,6 +96,11 @@ class FontawesomeMarker extends mapboxgl.Marker {
     updatePopup(media) {
         const popupContent = this.getPopup().getElement().querySelector('.mapboxgl-popup-content > div');
         const grid = popupContent.querySelector('div');
+
+        // Clear existing media elements
+        while (grid.firstChild) {
+            grid.removeChild(grid.firstChild);
+        }
 
         media.forEach((item, index) => {
             const mediaContainer = document.createElement('div');
@@ -120,9 +134,16 @@ class FontawesomeMarker extends mapboxgl.Marker {
             removeBtn.style.borderRadius = '50%';
             removeBtn.style.padding = '2px 5px';
             removeBtn.style.cursor = 'pointer';
-            removeBtn.addEventListener('click', (e) => {
+            removeBtn.addEventListener('click', async (e) => {
                 e.stopPropagation();
-                this.removeMedia(index);
+                try {
+                    await fetch(`https://rememberwhen-backend-43d3134117c9.herokuapp.com/markers/${this._id}/media/${index}`, {
+                        method: 'PATCH'
+                    });
+                    this.removeMedia(index);
+                } catch (error) {
+                    console.error('Error deleting media from server:', error);
+                }
             });
 
             mediaContainer.appendChild(mediaElem);
@@ -138,10 +159,8 @@ class FontawesomeMarker extends mapboxgl.Marker {
         });
         if (markerIndex !== -1) {
             markersArray[markerIndex].media.splice(index, 1);
-            localStorage.setItem('markers', JSON.stringify(markersArray));
             this.getPopup().remove();
-            this.setPopup(this.createPopup(markersArray[markerIndex].description, markersArray[markerIndex].media)).togglePopup();
+            this.setPopup(this.createPopup(markersArray[markerIndex].description, markersArray[markerIndex].media, this._id)).togglePopup();
         }
     }
 }
-

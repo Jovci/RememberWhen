@@ -73,20 +73,42 @@ document.getElementById('placeMarker').addEventListener('click', () => {
     }
 });
 
-document.getElementById('deleteMarker').addEventListener('click', () => {
+document.getElementById('deleteMarker').addEventListener('click', async () => {
     if (selectedMarker) {
         const markerElement = selectedMarker.getElement();
         const markerIndex = markersArray.findIndex(markerData => {
             const markerLngLat = selectedMarker.getLngLat();
             return markerData.coordinates[0] === markerLngLat.lng && markerData.coordinates[1] === markerLngLat.lat;
         });
+
         if (markerIndex !== -1) {
+            const markerId = markersArray[markerIndex]._id; // Get the marker ID
+
+            // Remove the marker from the local array
             markersArray.splice(markerIndex, 1);
+
+            // Remove the marker from the database
+            try {
+                const response = await fetch(`https://rememberwhen-backend-43d3134117c9.herokuapp.com/markers/${markerId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+            } catch (error) {
+                console.error('Error deleting marker from server:', error);
+            }
         }
+
         selectedMarker.remove();
         selectedMarker = null;
     }
 });
+
 
 document.getElementById('addMediaToMarker').addEventListener('click', () => {
     if (selectedMarker) {
@@ -104,12 +126,43 @@ document.getElementById('addMediaToMarker').addEventListener('click', () => {
                             const markerLngLat = selectedMarker.getLngLat();
                             return markerData.coordinates[0] === markerLngLat.lng && markerData.coordinates[1] === markerLngLat.lat;
                         });
+
                         if (markerIndex !== -1) {
                             markersArray[markerIndex].media = markersArray[markerIndex].media.concat(newMedia);
-                            selectedMarker.updatePopup(newMedia);
+                            const markerId = markersArray[markerIndex]._id; // Get the marker ID
+
+                            if (!markerId) {
+                                console.error('Marker ID not found:', markersArray[markerIndex]);
+                                return;
+                            }
+
+                            console.log('Updating marker with ID:', markerId);
+
+                            // Update the marker in the database
+                            fetch(`https://rememberwhen-backend-43d3134117c9.herokuapp.com/markers/${markerId}`, {
+                                method: 'PATCH',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ media: markersArray[markerIndex].media })
+                            })
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('Network response was not ok');
+                                }
+                                return response.json();
+                            })
+                            .then(updatedMarker => {
+                                selectedMarker.updatePopup(updatedMarker.media);
+                            })
+                            .catch(error => {
+                                console.error('Error updating marker on server:', error);
+                            });
 
                             // Clear the media upload input
                             mediaInput.value = '';
+                        } else {
+                            console.error('Marker not found in markersArray:', selectedMarker.getLngLat());
                         }
                     }
                 };
@@ -118,6 +171,8 @@ document.getElementById('addMediaToMarker').addEventListener('click', () => {
         }
     }
 });
+
+
 
 // Modal functionality
 const modal = document.getElementById('imageModal');
