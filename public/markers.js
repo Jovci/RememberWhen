@@ -1,5 +1,5 @@
 let selectedMarker = null;
-let markersArray = JSON.parse(localStorage.getItem('markers')) || [];
+let markersArray = [];
 
 async function loadMarkersFromServer() {
     try {
@@ -45,17 +45,20 @@ document.getElementById('placeMarker').addEventListener('click', () => {
 
                         new FontawesomeMarker(markerData);
                         markersArray.push(markerData);
-                        localStorage.setItem('markers', JSON.stringify(markersArray));
 
                         // Save to backend
                         try {
-                            await fetch('https://rememberwhen-backend-43d3134117c9.herokuapp.com/markers', {
+                            const response = await fetch('https://rememberwhen-backend-43d3134117c9.herokuapp.com/markers', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json'
                                 },
                                 body: JSON.stringify(markerData)
                             });
+
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
                         } catch (error) {
                             console.error('Error saving marker to server:', error);
                         }
@@ -79,7 +82,6 @@ document.getElementById('deleteMarker').addEventListener('click', () => {
         });
         if (markerIndex !== -1) {
             markersArray.splice(markerIndex, 1);
-            localStorage.setItem('markers', JSON.stringify(markersArray));
         }
         selectedMarker.remove();
         selectedMarker = null;
@@ -104,9 +106,8 @@ document.getElementById('addMediaToMarker').addEventListener('click', () => {
                         });
                         if (markerIndex !== -1) {
                             markersArray[markerIndex].media = markersArray[markerIndex].media.concat(newMedia);
-                            localStorage.setItem('markers', JSON.stringify(markersArray));
                             selectedMarker.updatePopup(newMedia);
-                            
+
                             // Clear the media upload input
                             mediaInput.value = '';
                         }

@@ -145,7 +145,3 @@ class FontawesomeMarker extends mapboxgl.Marker {
     }
 }
 
-// Load saved markers from local storage
-markersArray.forEach(markerData => {
-    new FontawesomeMarker(markerData);
-});
