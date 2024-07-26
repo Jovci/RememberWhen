@@ -1,6 +1,3 @@
-let selectedMarker = null;
-let markersArray = JSON.parse(localStorage.getItem('markers')) || [];
-
 mapboxgl.accessToken = 'pk.eyJ1Ijoiam92Y2kiLCJhIjoiY2x2dWVzNzU2MWphdDJ3bzZ0NDh6dmR5ZiJ9.T8BAscTbUkJhCBTnq1_iSQ';
 const map = new mapboxgl.Map({
     container: 'map',
@@ -19,7 +16,6 @@ map.addControl(
 );
 
 map.addControl(new mapboxgl.NavigationControl());
-map.scrollZoom.enable();
 
 map.on('style.load', () => {
     map.setFog({});
