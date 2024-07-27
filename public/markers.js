@@ -1,4 +1,5 @@
 let selectedMarker = null;
+let selectedMarkerId = null; // Store the selected marker ID
 let markersArray = [];
 
 async function loadMarkersFromServer() {
@@ -43,7 +44,7 @@ document.getElementById('placeMarker').addEventListener('click', () => {
                             media: media
                         };
 
-                        new FontawesomeMarker(markerData);
+                        const marker = new FontawesomeMarker(markerData);
                         markersArray.push(markerData);
 
                         // Save to backend
@@ -59,6 +60,14 @@ document.getElementById('placeMarker').addEventListener('click', () => {
                             if (!response.ok) {
                                 throw new Error('Network response was not ok');
                             }
+
+                            const savedMarker = await response.json();
+                            markerData._id = savedMarker._id; // Update the markerData with the ID from the backend
+                            marker._id = savedMarker._id; // Update the marker with the ID from the backend
+                            console.log(`Marker saved: ID = ${savedMarker._id}`);
+
+                            // Store the saved marker ID in a global variable
+                            selectedMarkerId = savedMarker._id;
                         } catch (error) {
                             console.error('Error saving marker to server:', error);
                         }
@@ -106,9 +115,9 @@ document.getElementById('deleteMarker').addEventListener('click', async () => {
 
         selectedMarker.remove();
         selectedMarker = null;
+        selectedMarkerId = null; // Reset the selected marker ID
     }
 });
-
 
 document.getElementById('addMediaToMarker').addEventListener('click', () => {
     if (selectedMarker) {
@@ -171,8 +180,6 @@ document.getElementById('addMediaToMarker').addEventListener('click', () => {
         }
     }
 });
-
-
 
 // Modal functionality
 const modal = document.getElementById('imageModal');

@@ -22,6 +22,7 @@ class FontawesomeMarker extends mapboxgl.Marker {
                 selectedMarker.getElement().style.border = 'none';
             }
             selectedMarker = this;
+            selectedMarkerId = this._id; // Update the global selected marker ID
             el.style.border = '2px solid red';
         });
     }
@@ -74,6 +75,7 @@ class FontawesomeMarker extends mapboxgl.Marker {
                 removeBtn.addEventListener('click', async (e) => {
                     e.stopPropagation();
                     try {
+                        markerId = this._id
                         await fetch(`https://rememberwhen-backend-43d3134117c9.herokuapp.com/markers/${markerId}/media/${index}`, {
                             method: 'PATCH'
                         });
