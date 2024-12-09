@@ -29,9 +29,7 @@ export default function LandingPage() {
               you say, remember when?
             </Typography>
             <Link href="/map">
-              <Button size="tiny" variant="ghost">
-                Get Started
-              </Button>
+
             </Link>
             <div style={{ width: '100%', height: '400px' }}>
               <iframe
