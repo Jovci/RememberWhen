@@ -1,138 +1,60 @@
-'use client'
-import { cn } from '@/lib/utils'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { usePathname } from 'next/navigation'
-import Typography from '@/components/ui/typography'
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTrigger
-} from '@/components/ui/drawer'
-import { MenuIcon, X } from 'lucide-react'
+import { createClient } from '@/utils/supabase/server';
+import Link from 'next/link';
+import Typography from '@/components/ui/typography';
+import LogoutButton from './LogoutButton'; // Import the client-side logout button
 
-interface SidebarProps
-  extends React.HTMLAttributes<HTMLDivElement> {}
+interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
-export function Header({ className }: SidebarProps) {
-  const pathname = usePathname()
-  const items = [
-    {
-      href: 'Boilerplate',
-      title: 'Not a social media app',
-      openInNewTab: true
-    }
-    // { href: '#pricing', title: 'Features' },
-    // {
-    //   href: 'mailto:myemail@.com',
-    //   title: 'Contact Us'
-    // }
-  ]
+export async function Header({ className }: SidebarProps) {
+  const supabase = await createClient();
 
-  const getLogo = () => (
-    <Link href="/" className="pointer flex items-center">
-      <img src="/logo.svg" className="mr-3" />
-      <Typography className="!text-white !text-base font-medium ">
-        RememberWhen
-      </Typography>
-    </Link>
-  )
+  const { data, error } = await supabase.auth.getUser();
+  const user = data?.user;
 
-  const getAuthButtons = () => (
-    <div className="flex gap-3 items-center">
-      <Link
-        href="Boilerplate"
-        target="_blank"
-      >
-        <Typography variant="p">Login</Typography>
-      </Link>
-      <Link
-        href="Boilerplate"
-        target="_blank"
-      >
-        <Button size="tiny" color="ghost">
-          <Typography variant="p" className="text-black">
-            Sign Up
+  const getAuthButtons = () => {
+    if (user) {
+      return (
+        <div className="flex gap-3 items-center">
+          <Typography variant="p" className="text-white">
+            Welcome, {user.email}
           </Typography>
-        </Button>
-      </Link>
-    </div>
-  )
+          <LogoutButton /> {/* Client-side button for logout */}
+        </div>
+      );
+    }
 
-  const getHeaderItems = () => {
     return (
-      <>
-        {items.map((item) => {
-          const selected =
-            pathname === item.href ||
-            pathname.includes(item.href)
-          return (
-            <Link
-              href={item.href}
-              className="pointer block w-fit"
-              target={item.openInNewTab ? '_blank' : ''}
-              key={item.title}
-            >
-              <Typography
-                variant="p"
-                className={cn(selected && 'text-primary')}
-              >
-                {item.title}
-              </Typography>
-            </Link>
-          )
-        })}
-      </>
-    )
-  }
+      <div className="flex gap-3 items-center">
+        <Link href="/login">
+          <Typography variant="p">Login</Typography>
+        </Link>
+        <Link href="/signup">
+          <button className="p-2 bg-blue-500 text-white rounded">
+            Sign Up
+          </button>
+        </Link>
+      </div>
+    );
+  };
 
   return (
     <div
-      className={cn(
-        `flex md:h-12 h-14 items-center justify-center w-full
-          border-b`,
-        className
-      )}
+      className={`flex md:h-12 h-14 items-center justify-center w-full border-b px-4 ${className}`}
     >
       <div className="w-full max-w-[1280px] md:px-8 px-4">
         {/* Desktop */}
-        <div className="flex items-center gap-x-8 w-full">
-          <div className="md:flex-0 min-w-fit flex-1">
-            {getLogo()}
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-x-8">
+            <Link href="/" className="flex items-center">
+              <img src="/logo.svg" alt="Logo" className="mr-3" />
+              <Typography className="!text-white !text-base font-medium">
+                RememberWhen
+              </Typography>
+            </Link>
           </div>
-          <div className="hidden md:flex flex items-center w-full">
-            <div className="flex items-center gap-x-8 flex-1">
-              {getHeaderItems()}
-            </div>
-            {getAuthButtons()}
-          </div>
-          {/* Mobile */}
-          <div className="md:hidden flex gap-x-4 items-center">
-            {getAuthButtons()}
-            <Drawer direction="right">
-              <DrawerTrigger asChild>
-                <MenuIcon />
-              </DrawerTrigger>
-              <DrawerContent className="h-screen top-0 right-0 left-auto mt-0 w-64 rounded-none">
-                <div className="mx-auto w-full p-5">
-                  <DrawerHeader>
-                    <DrawerClose asChild>
-                      <div className="w-full flex items-end justify-end">
-                        <X />
-                      </div>
-                    </DrawerClose>
-                  </DrawerHeader>
-                  <div className="p-4 pb-0 space-y-4">
-                    {getHeaderItems()}
-                  </div>
-                </div>
-              </DrawerContent>
-            </Drawer>
-          </div>
+          <div className="flex items-center gap-x-8">{getAuthButtons()}</div>
         </div>
       </div>
     </div>
-  )
+  );
 }

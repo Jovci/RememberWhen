@@ -1,6 +1,7 @@
-'use client'
-import Link from 'next/link'
-import Typography from '@components/ui/typography'
+'use client';
+
+import Link from 'next/link';
+import Typography from '@components/ui/typography';
 
 export function Footer() {
   return (
@@ -17,7 +18,7 @@ export function Footer() {
         <div className="flex flex-nowrap items-center gap-x-4">
           <Link href="Boilerplate" target="_blank" className="pointer block w-fit flex-1">
             <Typography variant="p" className="whitespace-nowrap w-max">
-              Not A Social Media App
+              .
             </Typography>
           </Link>
           <Link href="/terms-of-service" className="pointer block w-fit flex-1">
@@ -30,8 +31,9 @@ export function Footer() {
               Privacy Policy
             </Typography>
           </Link>
+
         </div>
       </div>
     </footer>
-  )
+  );
 }

@@ -1,0 +1,15 @@
+/* Main wrapper for sidebar and map */
+.wrapper {
+  display: flex;
+  height: calc(100vh - 60px); /* Adjust for header height */
+  width: 100vw;
+}
+
+
+/* Map container */
+.mapContainer {
+  flex: 1;
+  position: relative;
+}
+
+

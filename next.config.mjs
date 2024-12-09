@@ -12,7 +12,15 @@ const nextConfig = {
       'm.media-amazon.com',
       'upload.wikimedia.org'
     ]
-  }
+  },
+/*   async rewrites() {
+    return [
+      {
+        source: '/index',
+        destination: '/map/index',
+      },
+    ];
+  } */
 }
 
 export default nextConfig
