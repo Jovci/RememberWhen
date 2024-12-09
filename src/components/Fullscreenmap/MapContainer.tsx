@@ -38,6 +38,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
 
+  //yay
   // Initialize the map
   useEffect(() => {
     const map = new mapboxgl.Map({

@@ -86,6 +86,7 @@ export default function FullScreenMap({
     };
   }, [supabase]);
   
+//yay
 
   const addMarker = useCallback(
     async (marker: MarkerData) => {
