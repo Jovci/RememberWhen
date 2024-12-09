@@ -46,7 +46,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:pt-1 md:gap-11 gap-1 items-center">
             <div className="flex flex-col gap-12 items-center">
               <Typography className="max-w-2xl" variant="h1">
-                Social Media Done Right
+                Memories Done Right
               </Typography>
               <div className="flex md:flex-row flex-col gap-12">
                 <Feature

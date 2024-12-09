@@ -56,29 +56,25 @@ const MapContainer: React.FC<MapContainerProps> = ({
     };
   }, []);
 
-  // Add existing markers to the map
   useEffect(() => {
     if (!mapRef.current) return;
 
-    // Clear existing markers
     mapRef.current
       .getContainer()
       .querySelectorAll('.mapboxgl-marker')
       .forEach((marker) => marker.remove());
 
-    // Add markers from the `markers` array
     markers.forEach((marker) => {
       const mapMarker = new mapboxgl.Marker()
         .setLngLat([marker.longitude, marker.latitude])
         .addTo(mapRef.current!);
 
       mapMarker.getElement().addEventListener('click', () => {
-        onMarkerClick(marker.id); // Notify parent when marker is clicked
+        onMarkerClick(marker.id); 
       });
     });
   }, [markers, onMarkerClick]);
 
-  // Handle map click for new markers
   useEffect(() => {
     if (!mapRef.current) return;
 
